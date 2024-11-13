@@ -2,7 +2,7 @@ import { NeuralNetwork } from 'brain.js';
 
 self.onmessage = function (e) {
   const { trainingSet, config } = e.data;
-  const net = new NeuralNetwork();
+  const net = new NeuralNetwork({ gpu: false });
 
   // Train with logging on each iteration
   net.train(trainingSet, {

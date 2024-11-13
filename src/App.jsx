@@ -9,8 +9,7 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isTraining, setIsTraining] = useState(false);
   const [isTrained, setIsTrained] = useState(false);
-  const [testResult, setTestResult] = useState(null);
-  const [trainedNet, setTrainedNet] = useState(null);  // New state for trained network
+  const [trainedNet, setTrainedNet] = useState(null); // New state for trained network
   const [trainingSet, setTrainingSet] = useState(null);
   const [testSet, setTestSet] = useState(null);
   const [stats, setStats] = useState([]);
@@ -20,7 +19,7 @@ const App = () => {
   // Function to load the training set
   const loadTrainingSet = () => {
     setIsLoading(true);
-    const set = mnist.set(2000, 10);
+    const set = mnist.set(2000, 20);
     setTrainingSet(set.training);
     setTestSet(set.test);
     setIsLoading(false);
@@ -51,13 +50,8 @@ const App = () => {
         setIsTrained(true);
 
         // Load the trained network to use for predictions
-        const trainedNet = new NeuralNetwork().fromJSON(net);
-        setTrainedNet(trainedNet);  // Store the trained network in state
-        // const result = trainedNet.run(testSet[0].input);
-        // setTestResult({
-        //   expected: testSet[0].output,
-        //   result,
-        // });
+        const trainedNet = new NeuralNetwork({ gpu: false }).fromJSON(net);
+        setTrainedNet(trainedNet); // Store the trained network in state
 
         // Terminate the worker after training completes
         worker.terminate();
@@ -75,13 +69,30 @@ const App = () => {
     });
   };
 
+  // Function to save the trained network as a JSON file
+  const saveTrainedModel = () => {
+    if (!trainedNet) {
+      alert('No trained model to save!');
+      return;
+    }
+
+    const modelJSON = trainedNet.toJSON(); // Serialize the trained model
+    const blob = new Blob([JSON.stringify(modelJSON)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'trained-model.json'; // Set the name of the download file
+    link.click();
+  };
+
   return (
     <div>
-      <h1 className='text-3xl underline p-4'>MNIST - AI handwritten digit recognizition</h1>
+      <h1 className="text-3xl underline p-4">MNIST - AI Handwritten Digit Recognition</h1>
+      
+      {/* Load Training Data */}
       <div>
-        <p className='p-3'>Step 1: load the training data.</p>
+        <p className="p-3">Step 1: Load the training data.</p>
         <Button
-          className='ml-6'
+          className="ml-6"
           onClick={loadTrainingSet}
           disabled={isLoading || isTrained || trainingSet}
         >
@@ -89,10 +100,11 @@ const App = () => {
         </Button>
       </div>
 
+      {/* Train the Model */}
       <div>
-        <p className='p-3'>step 2: Train the model, using the training data.</p>
+        <p className="p-3">Step 2: Train the model using the training data.</p>
         <Button
-          className='ml-6'
+          className="ml-6"
           onClick={trainModel}
           disabled={isTraining || !trainingSet || isTrained}
         >
@@ -100,24 +112,35 @@ const App = () => {
         </Button>
       </div>
 
+      {/* Save Model Button */}
+      <div>
+        {isTrained && (
+          <Button
+            className="ml-6"
+            onClick={saveTrainedModel}
+            disabled={!trainedNet}
+          >
+            Save Trained Model
+          </Button>
+        )}
+      </div>
+
+      {/* Stats Display */}
       <div>
         <Stats stats={stats} />
       </div>
+
+      {/* Displaying Model Status */}
       <div>
         <div>
           {!isTrained ? (
-            <p className='text-xl underline p-4'>
-              Once the error threshold is met...
-            </p>
+            <p className="text-xl underline p-4">Once the error threshold is met...</p>
           ) : (
-            <p className='text-xl underline p-4'>
-              Model successfully trained!
-            </p>
+            <p className="text-xl underline p-4">Model successfully trained!</p>
           )}
 
-          <p className='p-3'>
-            Step 3: Use the model to make predictions on the test set. These
-            numbers are all new to the model.
+          <p className="p-3">
+            Step 3: Use the model to make predictions on the test set. These numbers are all new to the model.
           </p>
           {/* Pass the trained network as a prop to DrawDigit */}
           <DrawDigit trainedNet={trainedNet} />
